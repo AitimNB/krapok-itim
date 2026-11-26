@@ -1,0 +1,74 @@
+<!doctype html>
+<html lang="th">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover" />
+  <meta name="theme-color" content="#0f766e" />
+  <meta name="description" content="Krapok Itim PWA" />
+  <title>กระปุกอิฐ</title>
+  <link rel="manifest" href="./manifest.webmanifest" />
+  <link rel="icon" href="./icon.svg" type="image/svg+xml" />
+  <style>
+    :html, body { width: 100%; height: 100%; margin: 0; background: #f7faf9; }
+    body { font-family: system-ui, -apple-system, "Segoe UI", sans-serif; }
+    #app { width: 100%; height: 100%; border: 0; display: block; }
+    #loading { position: fixed; inset: 0; display: grid; place-items: center; text-align: center; background: #f7faf9; color: #134e4a; }
+    #loading .card { max-width: 28rem; padding: 2rem; }
+    #loading .spinner { width: 42px; height: 42px; margin: 0 auto 1rem; border: 4px solid #ccfbf1; border-top-color: #0f766e; border-radius: 50%; animation: spin 1s linear infinite; }
+    #error { color: #b91c1c; white-space: pre-wrap; }
+    @keyframes spin { to { transform: rotate(360deg); } }
+  </style>
+  <script src="https://cdn.jsdelivr.net/npm/jszip@3.10.1/dist/jszip.min.js"></script>
+</head>
+<body>
+  <div id="loading"><div class="card"><div class="spinner"></div><strong>กำลังเปิดกระปุกอิฐ...</strong><p id="error"></p></div></div>
+  <iframe id="app" title="Krapok Itim" hidden></iframe>
+  <script>
+    async function openApp() {
+      try {
+        const response = await fetch('./krapok_itim_pwa_v1.zip', { cache: 'no-store' });
+        if (!response.ok) throw new Error('ไม่พบไฟล์ krapok_itim_pwa_v1.zip (' + response.status + ')');
+        const zip = await JSZip.loadAsync(await response.arrayBuffer());
+        const htmlPath = Object.keys(zip.files).find(path => /(^|\/)index\.html$/i.test(path) && !zip.files[path].dir);
+        if (!htmlPath) throw new Error('ไม่พบ index.html ในไฟล์ ZIP');
+
+        const blobUrls = {};
+        await Promise.all(Object.keys(zip.files).filter(path => !zip.files[path].dir).map(async path => {
+          const file = zip.files[path];
+          const bytes = await file.async('uint8array');
+          const type = path.endsWith('.svg') ? 'image/svg+xml'
+            : path.endsWith('.webmanifest') ? 'application/manifest+json'
+            : path.endsWith('.js') ? 'text/javascript'
+            : path.endsWith('.css') ? 'text/css'
+            : path.endsWith('.json') ? 'application/json'
+            : 'application/octet-stream';
+          blobUrls[path] = URL.createObjectURL(new Blob([bytes], { type }));
+        }));
+
+        let html = await zip.files[htmlPath].async('string');
+        const folder = htmlPath.includes('/') ? htmlPath.slice(0, htmlPath.lastIndexOf('/') + 1) : '';
+        html = html.replace(/(href|src)=["']([^"'#]+)([^"']*)["']/gi, (match, attribute, relative, suffix) => {
+          if (/^(?:https?:|data:|blob:|#)/i.test(relative)) return match;
+          const clean = relative.replace(/^\.\//, '').split('?')[0];
+          const candidates = [folder + clean, clean, folder + clean.replace(/^\.\.\//, '')];
+          const found = candidates.find(candidate => blobUrls[candidate]);
+          return found ? `${attribute}="${blobUrls[found]}${suffix}"` : match;
+        });
+
+        const iframe = document.getElementById('app');
+        iframe.srcdoc = html;
+        iframe.hidden = false;
+        iframe.onload = () => document.getElementById('loading').remove();
+      } catch (error) {
+        document.querySelector('#loading .spinner').style.display = 'none';
+        document.getElementById('error').textContent = error.message;
+      }
+    }
+
+    openApp();
+    if ('serviceWorker' in navigator) {
+      window.addEventListener('load', () => navigator.serviceWorker.register('./sw.js').catch(() => {}));
+    }
+  </script>
+</body>
+</html>
