@@ -1,74 +1,183 @@
 <!doctype html>
 <html lang="th">
 <head>
-  <meta charset="utf-8" />
-  <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover" />
-  <meta name="theme-color" content="#0f766e" />
-  <meta name="description" content="Krapok Itim PWA" />
-  <title>กระปุกอิฐ</title>
-  <link rel="manifest" href="./manifest.webmanifest" />
-  <link rel="icon" href="./icon.svg" type="image/svg+xml" />
-  <style>
-    :html, body { width: 100%; height: 100%; margin: 0; background: #f7faf9; }
-    body { font-family: system-ui, -apple-system, "Segoe UI", sans-serif; }
-    #app { width: 100%; height: 100%; border: 0; display: block; }
-    #loading { position: fixed; inset: 0; display: grid; place-items: center; text-align: center; background: #f7faf9; color: #134e4a; }
-    #loading .card { max-width: 28rem; padding: 2rem; }
-    #loading .spinner { width: 42px; height: 42px; margin: 0 auto 1rem; border: 4px solid #ccfbf1; border-top-color: #0f766e; border-radius: 50%; animation: spin 1s linear infinite; }
-    #error { color: #b91c1c; white-space: pre-wrap; }
-    @keyframes spin { to { transform: rotate(360deg); } }
-  </style>
-  <script src="https://cdn.jsdelivr.net/npm/jszip@3.10.1/dist/jszip.min.js"></script>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
+<meta name="theme-color" content="#25364d">
+<meta name="description" content="กระปุกไอติม แอปจัดการเงินส่วนตัวและธุรกิจ เก็บข้อมูลไว้ในอุปกรณ์">
+<link rel="manifest" href="manifest.webmanifest">
+<link rel="icon" href="icon.svg" type="image/svg+xml">
+<title>กระปุกไอติม</title>
+<style>
+:root{font-family:system-ui,-apple-system,"Noto Sans Thai",sans-serif;color:#243247;background:#f3f5f8}
+*{box-sizing:border-box}body{margin:0;padding:0 0 28px}header{background:#25364d;color:white;padding:20px 17px 18px;border-radius:0 0 22px 22px}
+.brand{font-weight:800;letter-spacing:.5px;font-size:19px}.sub{color:#d5dce5;font-size:12px;margin-top:3px}
+.balance{font-size:30px;font-weight:800;margin:14px 0 3px}.muted{color:#718096;font-size:12px}
+main{max-width:760px;margin:auto;padding:14px}.tabs{display:grid;grid-template-columns:repeat(4,1fr);gap:6px;margin:0 0 13px}
+button,.tab{border:0;border-radius:11px;padding:11px 9px;font:inherit;font-weight:650;cursor:pointer}
+.tab{background:#e3e8ef;color:#3b4b60}.tab.active{background:#25364d;color:#fff}
+.card{background:white;border:1px solid #e4e9ef;border-radius:16px;padding:15px;margin:10px 0;box-shadow:0 2px 8px #1b2c4210}
+h2{font-size:17px;margin:0 0 12px}h3{font-size:14px;margin:0 0 8px}
+.grid{display:grid;grid-template-columns:1fr 1fr;gap:9px}.metric{background:#f2f5f8;border-radius:12px;padding:12px}.metric b{display:block;font-size:19px;margin-top:4px}
+label{display:block;font-size:13px;font-weight:650;margin:10px 0 5px}
+input,select{width:100%;padding:11px;border:1px solid #d6dee8;border-radius:10px;background:#fff;font:inherit;color:#243247}
+.primary{background:#25364d;color:#fff;width:100%;margin-top:13px}.secondary{background:#e9eef4;color:#25364d}.danger{background:#fff0f0;color:#9d2929}
+.row{display:flex;align-items:center;justify-content:space-between;gap:10px;padding:8px 0;border-bottom:1px solid #edf0f4}.row:last-child{border:0}
+.amount{font-weight:750;font-variant-numeric:tabular-nums}.pill{font-size:11px;background:#edf2f7;border-radius:20px;padding:4px 8px;color:#53657a}
+.note{font-size:12px;color:#718096;line-height:1.55}.warn{background:#fff7e6;color:#795514;padding:11px;border-radius:11px;font-size:12px;line-height:1.5}
+.success{background:#eaf7ef;color:#21633b;padding:11px;border-radius:11px;font-size:13px}
+.hidden{display:none!important}.bar{height:8px;background:#e8edf2;border-radius:8px;overflow:hidden}.bar span{display:block;height:100%;background:#55799f}
+footer{text-align:center;color:#8491a2;font-size:11px;padding:16px}
+@media(max-width:380px){.tabs{grid-template-columns:repeat(2,1fr)}}
+</style>
 </head>
 <body>
-  <div id="loading"><div class="card"><div class="spinner"></div><strong>กำลังเปิดกระปุกอิฐ...</strong><p id="error"></p></div></div>
-  <iframe id="app" title="Krapok Itim" hidden></iframe>
-  <script>
-    async function openApp() {
-      try {
-        const response = await fetch('./krapok_itim_pwa_v1.zip', { cache: 'no-store' });
-        if (!response.ok) throw new Error('ไม่พบไฟล์ krapok_itim_pwa_v1.zip (' + response.status + ')');
-        const zip = await JSZip.loadAsync(await response.arrayBuffer());
-        const htmlPath = Object.keys(zip.files).find(path => /(^|\/)index\.html$/i.test(path) && !zip.files[path].dir);
-        if (!htmlPath) throw new Error('ไม่พบ index.html ในไฟล์ ZIP');
-
-        const blobUrls = {};
-        await Promise.all(Object.keys(zip.files).filter(path => !zip.files[path].dir).map(async path => {
-          const file = zip.files[path];
-          const bytes = await file.async('uint8array');
-          const type = path.endsWith('.svg') ? 'image/svg+xml'
-            : path.endsWith('.webmanifest') ? 'application/manifest+json'
-            : path.endsWith('.js') ? 'text/javascript'
-            : path.endsWith('.css') ? 'text/css'
-            : path.endsWith('.json') ? 'application/json'
-            : 'application/octet-stream';
-          blobUrls[path] = URL.createObjectURL(new Blob([bytes], { type }));
-        }));
-
-        let html = await zip.files[htmlPath].async('string');
-        const folder = htmlPath.includes('/') ? htmlPath.slice(0, htmlPath.lastIndexOf('/') + 1) : '';
-        html = html.replace(/(href|src)=["']([^"'#]+)([^"']*)["']/gi, (match, attribute, relative, suffix) => {
-          if (/^(?:https?:|data:|blob:|#)/i.test(relative)) return match;
-          const clean = relative.replace(/^\.\//, '').split('?')[0];
-          const candidates = [folder + clean, clean, folder + clean.replace(/^\.\.\//, '')];
-          const found = candidates.find(candidate => blobUrls[candidate]);
-          return found ? `${attribute}="${blobUrls[found]}${suffix}"` : match;
-        });
-
-        const iframe = document.getElementById('app');
-        iframe.srcdoc = html;
-        iframe.hidden = false;
-        iframe.onload = () => document.getElementById('loading').remove();
-      } catch (error) {
-        document.querySelector('#loading .spinner').style.display = 'none';
-        document.getElementById('error').textContent = error.message;
-      }
-    }
-
-    openApp();
-    if ('serviceWorker' in navigator) {
-      window.addEventListener('load', () => navigator.serviceWorker.register('./sw.js').catch(() => {}));
-    }
-  </script>
-</body>
-</html>
+<header>
+ <div class="brand">▣ KRA POK ITIM</div><div class="sub">PERSONAL & BUSINESS FINANCE</div>
+ <div class="balance" id="headerBalance">฿0.00</div><div class="sub">ยอดเงินคงเหลือที่บันทึกในแอป</div>
+</header>
+<main>
+ <nav class="tabs">
+  <button class="tab active" data-tab="home">ภาพรวม</button>
+  <button class="tab" data-tab="income">รับเงิน / แบ่งเงิน</button>
+  <button class="tab" data-tab="expense">รายจ่าย</button>
+  <button class="tab" data-tab="pots">กระปุก</button>
+ </nav>
+ <section id="home">
+  <div class="grid">
+   <div class="metric"><span class="muted">รายรับที่บันทึก</span><b id="sumIncome">฿0</b></div>
+   <div class="metric"><span class="muted">รายจ่ายที่บันทึก</span><b id="sumExpense">฿0</b></div>
+   <div class="metric"><span class="muted">เงินบุญสะสม</span><b id="sumDonation">฿0</b></div>
+   <div class="metric"><span class="muted">รายการทั้งหมด</span><b id="countRecords">0</b></div>
+  </div>
+  <div class="card"><h2>กระปุกของฉัน</h2><div id="homePots"></div></div>
+  <div class="card"><h2>รายการล่าสุด</h2><div id="recent" class="note">ยังไม่มีรายการ</div></div>
+  <div class="card">
+   <h2>สำรองและกู้คืนข้อมูล</h2>
+   <p class="note">ข้อมูลอยู่ในพื้นที่จัดเก็บของอุปกรณ์นี้เท่านั้น โปรดดาวน์โหลดไฟล์สำรองเป็นประจำ และเก็บไว้ในที่ปลอดภัย.</p>
+   <button class="secondary" id="exportBtn">ดาวน์โหลดไฟล์สำรอง</button>
+   <label for="importFile">นำเข้าไฟล์สำรอง</label><input type="file" id="importFile" accept=".json,application/json">
+   <button class="danger" id="resetBtn">ล้างข้อมูลทั้งหมด</button>
+  </div>
+ </section>
+ <section id="income" class="hidden">
+  <div class="card">
+   <h2>บันทึกรายรับธุรกิจ</h2>
+   <label>ชื่องาน / ที่มารายรับ</label><input id="incomeName" placeholder="เช่น ค่าคอมมิชชันบ้าน...">
+   <label>ยอดรับ (บาท)</label><input id="incomeAmount" type="number" min="0" step="0.01" placeholder="50000">
+   <label>ต้นทุนธุรกิจ (บาท)</label><input id="incomeCost" type="number" min="0" step="0.01" value="0">
+   <label>เงินกันภาษี (บาท)</label><input id="incomeTax" type="number" min="0" step="0.01" value="0">
+   <label>อัตราเงินบุญจากกำไร</label><select id="donationRate"><option value="5">5%</option><option value="6">6%</option><option value="7">7%</option><option value="8">8%</option><option value="9">9%</option><option value="10">10%</option></select>
+  </div>
+  <div class="card">
+   <h2>เป้าหมายที่ยังต้องเติม (บาท)</h2>
+   <label>ภาระประจำ</label><input id="needBills" type="number" min="0" value="26000">
+   <label>เงินแม่</label><input id="needMom" type="number" min="0" value="4500">
+   <label>เงินกินส่วนตัว</label><input id="needPersonal" type="number" min="0" value="10500">
+   <p class="note">ยอด 26,000 บาทเป็นยอดรวมรอแจกแจง ไม่ได้ระบุว่าเป็นหนี้ก้อนเดียว</p>
+  </div>
+  <div class="card">
+   <h2>ข้อเสนอแบ่งเงิน</h2><div id="proposal" class="note">กรอกยอดรับเพื่อคำนวณข้อเสนอ</div>
+   <button class="primary" id="calculateBtn">คำนวณการแบ่งเงิน</button>
+   <div id="editAlloc" class="hidden">
+    <label>ภาระประจำ</label><input id="allocBills" type="number" min="0">
+    <label>เงินแม่</label><input id="allocMom" type="number" min="0">
+    <label>เงินกินส่วนตัว</label><input id="allocPersonal" type="number" min="0">
+    <label>เงินสำรองธุรกิจ / ฉุกเฉิน</label><input id="allocReserve" type="number" min="0">
+    <div id="allocationCheck" class="note"></div>
+    <button class="primary" id="confirmBtn">ยืนยันการแบ่งเงิน</button>
+   </div>
+  </div>
+ </section>
+ <section id="expense" class="hidden">
+  <div class="card">
+   <h2>บันทึกรายจ่าย</h2>
+   <label>จำนวนเงิน (บาท)</label><input id="expenseAmount" type="number" min="0" step="0.01" placeholder="เช่น 85">
+   <label>ร้านค้า / รายละเอียด</label><input id="expenseNote" placeholder="เช่น ข้าวกลางวัน">
+   <label>หมวดหมู่</label><select id="expenseCategory"><option>อาหาร</option><option>เครื่องดื่ม</option><option>เดินทาง</option><option>ของใช้ส่วนตัว</option><option>ธุรกิจ</option><option>ภาระประจำ</option><option>อื่น ๆ</option></select>
+   <label>ช่องทางชำระเงิน</label><select id="expenseMethod"><option>เงินสด</option><option>สแกน QR</option><option>โอนเงิน</option><option>บัตร</option></select>
+   <button class="primary" id="saveExpense">บันทึกรายจ่าย</button>
+  </div>
+  <div class="card"><h2>ประวัติรายจ่าย</h2><div id="expenseList" class="note">ยังไม่มีรายการ</div></div>
+ </section>
+ <section id="pots" class="hidden">
+  <div class="card"><h2>เป้าหมายกระปุกประจำเดือน</h2>
+   <p class="note">แก้ไขยอดเป้าหมายได้ ตัวเลขนี้เป็นเป้าหมาย ไม่ใช่ยอดเงินจริงในบัญชีธนาคาร</p>
+   <label>ภาระประจำ (ยอดรวมชั่วคราว)</label><input id="potBills" type="number" min="0" value="26000">
+   <label>เงินแม่</label><input id="potMom" type="number" min="0" value="4500">
+   <label>เงินกินส่วนตัว</label><input id="potPersonal" type="number" min="0" value="10500">
+   <button class="primary" id="saveTargets">บันทึกเป้าหมาย</button>
+  </div>
+  <div class="card"><h2>ยอดสะสมจากการยืนยัน</h2><div id="potTotals"></div></div>
+ </section>
+ <footer>กระปุกไอติม • ข้อมูลเก็บในอุปกรณ์นี้ • ไม่มีการเชื่อมธนาคาร</footer>
+</main>
+<script>
+const KEY='krapok-itim-v1';
+const defaults={incomes:[],expenses:[],allocations:[],targets:{bills:26000,mom:4500,personal:10500}};
+let db=load();
+function load(){try{return JSON.parse(localStorage.getItem(KEY))||structuredClone(defaults)}catch(e){return structuredClone(defaults)}}
+function save(){localStorage.setItem(KEY,JSON.stringify(db));render()}
+const $=id=>document.getElementById(id);
+const n=id=>Math.max(0,Number($(id).value)||0);
+const money=x=>'฿'+Number(x||0).toLocaleString('th-TH',{minimumFractionDigits:2,maximumFractionDigits:2});
+const sum=a=>a.reduce((s,x)=>s+Number(x.amount||0),0);
+function setTab(t){document.querySelectorAll('.tab').forEach(b=>b.classList.toggle('active',b.dataset.tab===t));['home','income','expense','pots'].forEach(x=>$(x).classList.toggle('hidden',x!==t))}
+document.querySelectorAll('.tab').forEach(b=>b.addEventListener('click',()=>setTab(b.dataset.tab)));
+let pending=null;
+function calc(){
+ const gross=n('incomeAmount'),cost=n('incomeCost'),tax=n('incomeTax'),profit=Math.max(0,gross-cost-tax),rate=n('donationRate'),donation=profit*rate/100,pool=profit-donation;
+ const bills=Math.min(n('needBills'),pool),mom=Math.min(n('needMom'),Math.max(0,pool-bills)),personal=Math.min(n('needPersonal'),Math.max(0,pool-bills-mom)),reserve=Math.max(0,pool-bills-mom-personal);
+ pending={name:$('incomeName').value.trim(),gross,cost,tax,profit,rate,donation,bills,mom,personal,reserve};
+ $('proposal').innerHTML=`<div class="row"><span>รายรับ</span><b>${money(gross)}</b></div><div class="row"><span>ต้นทุนธุรกิจ</span><b>${money(cost)}</b></div><div class="row"><span>กันภาษี</span><b>${money(tax)}</b></div><div class="row"><span>กำไรหลังต้นทุนและภาษี</span><b>${money(profit)}</b></div><div class="row"><span>เงินบุญ ${rate}%</span><b>${money(donation)}</b></div><div class="row"><span>เหลือจัดสรร</span><b>${money(pool)}</b></div>`;
+ $('allocBills').value=bills.toFixed(2);$('allocMom').value=mom.toFixed(2);$('allocPersonal').value=personal.toFixed(2);$('allocReserve').value=reserve.toFixed(2);
+ $('editAlloc').classList.remove('hidden');checkAlloc();
+}
+function checkAlloc(){
+ if(!pending)return;
+ const a=n('allocBills'),b=n('allocMom'),c=n('allocPersonal'),d=n('allocReserve'),total=pending.donation+a+b+c+d,ok=total<=pending.profit+0.001&&pending.gross>0;
+ $('allocationCheck').innerHTML=ok?`<div class="success">รวมจัดสรร ${money(total)} จากกำไร ${money(pending.profit)} • เหลือไม่จัดสรร ${money(pending.profit-total)}</div>`:`<div class="warn">ยอดจัดสรรเกินกำไร หรือยังไม่มีรายรับ กรุณาปรับยอดก่อนยืนยัน</div>`;
+ $('confirmBtn').disabled=!ok;
+}
+$('calculateBtn').addEventListener('click',calc);
+['allocBills','allocMom','allocPersonal','allocReserve'].forEach(id=>$(id).addEventListener('input',checkAlloc));
+$('confirmBtn').addEventListener('click',()=>{
+ if(!pending)return;checkAlloc();if($('confirmBtn').disabled)return;
+ const record={...pending,bills:n('allocBills'),mom:n('allocMom'),personal:n('allocPersonal'),reserve:n('allocReserve'),date:new Date().toISOString()};
+ db.incomes.push(record);db.allocations.push(record);pending=null;$('editAlloc').classList.add('hidden');$('proposal').textContent='ยืนยันแผนแบ่งเงินเรียบร้อยแล้ว';save();setTab('home');
+});
+$('saveExpense').addEventListener('click',()=>{
+ const amount=n('expenseAmount');if(!amount){alert('กรุณากรอกจำนวนเงิน');return}
+ db.expenses.unshift({amount,note:$('expenseNote').value.trim()||$('expenseCategory').value,category:$('expenseCategory').value,method:$('expenseMethod').value,date:new Date().toISOString()});
+ $('expenseAmount').value='';$('expenseNote').value='';save();
+});
+$('saveTargets').addEventListener('click',()=>{db.targets={bills:n('potBills'),mom:n('potMom'),personal:n('potPersonal')};save();alert('บันทึกเป้าหมายแล้ว')});
+$('exportBtn').addEventListener('click',()=>{
+ const blob=new Blob([JSON.stringify(db,null,2)],{type:'application/json'}),url=URL.createObjectURL(blob),a=document.createElement('a');
+ a.href=url;a.download='krapok-itim-backup-'+new Date().toISOString().slice(0,10)+'.json';a.click();URL.revokeObjectURL(url);
+});
+$('importFile').addEventListener('change',async e=>{
+ const f=e.target.files[0];if(!f)return;
+ try{const obj=JSON.parse(await f.text());if(!obj||!Array.isArray(obj.incomes)||!Array.isArray(obj.expenses)||!obj.targets)throw Error();
+ if(confirm('นำเข้าข้อมูลนี้และแทนที่ข้อมูลปัจจุบันหรือไม่?')){db=obj;save();alert('นำเข้าข้อมูลสำเร็จ')}
+ }catch(err){alert('ไฟล์สำรองไม่ถูกต้องหรือไม่รองรับ')}
+ e.target.value='';
+});
+$('resetBtn').addEventListener('click',()=>{if(confirm('ยืนยันล้างข้อมูลทั้งหมด? แนะนำดาวน์โหลดไฟล์สำรองก่อน')){db=structuredClone(defaults);save();alert('ล้างข้อมูลแล้ว')}});
+function render(){
+ const incomeTotal=sum(db.incomes.map(x=>({amount:x.gross}))),expenseTotal=sum(db.expenses),donationTotal=sum(db.allocations.map(x=>({amount:x.donation})));
+ $('headerBalance').textContent=money(incomeTotal-expenseTotal);
+ $('sumIncome').textContent=money(incomeTotal);$('sumExpense').textContent=money(expenseTotal);$('sumDonation').textContent=money(donationTotal);$('countRecords').textContent=db.incomes.length+db.expenses.length;
+ const pots=[['เงินธุรกิจ / กำไรคงเหลือ',sum(db.allocations.map(x=>({amount:x.reserve})))],['เงินภาษีที่กัน',sum(db.incomes.map(x=>({amount:x.tax})))],['เงินบุญ',donationTotal],['ภาระประจำ',sum(db.allocations.map(x=>({amount:x.bills})))],['เงินแม่',sum(db.allocations.map(x=>({amount:x.mom})))],['เงินกินส่วนตัว',sum(db.allocations.map(x=>({amount:x.personal})))],['เงินฉุกเฉิน','ยังไม่กำหนด']];
+ $('homePots').innerHTML=pots.map(([k,v])=>`<div class="row"><span>${k}</span><b class="amount">${typeof v==='number'?money(v):v}</b></div>`).join('');
+ const recent=[...db.incomes.map(x=>({type:'รายรับ',name:x.name||'รายรับธุรกิจ',amount:x.gross,date:x.date})),...db.expenses.map(x=>({type:'รายจ่าย',name:x.note,amount:x.amount,date:x.date}))].sort((a,b)=>new Date(b.date)-new Date(a.date)).slice(0,6);
+ $('recent').innerHTML=recent.length?recent.map(x=>`<div class="row"><span>${x.type} • ${escapeHtml(x.name)}<br><small>${new Date(x.date).toLocaleString('th-TH')}</small></span><b>${money(x.amount)}</b></div>`).join(''):'ยังไม่มีรายการ';
+ $('expenseList').innerHTML=db.expenses.length?db.expenses.map(x=>`<div class="row"><span>${escapeHtml(x.note)}<br><small>${x.category} • ${x.method} • ${new Date(x.date).toLocaleDateString('th-TH')}</small></span><b>${money(x.amount)}</b></div>`).join(''):'ยังไม่มีรายการ';
+ $('potBills').value=db.targets.bills;$('potMom').value=db.targets.mom;$('potPersonal').value=db.targets.personal;
+ $('potTotals').innerHTML=pots.map(([k,v])=>`<div class="row"><span>${k}</span><b>${typeof v==='number'?money(v):v}</b></div>`).join('');
+}
+function escapeHtml(s){return String(s).replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]))}
+if('serviceWorker'in navigator && location.protocol.startsWith('http'))window.addEventListener('load',()=>navigator.serviceWorker.register('./sw.js').catch(()=>{}));
+render();
+</script>
+</body></html>

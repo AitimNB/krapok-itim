@@ -1,15 +1,15 @@
 {
-  "name": "กระปุกอิฐ",
-  "short_name": "กระปุกอิฐ",
-  "description": "Krapok Itim PWA",
+  "name": "กระปุกไอติม",
+  "short_name": "กระปุกไอติม",
   "start_url": "./",
   "scope": "./",
   "display": "standalone",
-  "background_color": "#f7faf9",
-  "theme_color": "#0f766e",
+  "background_color": "#f3f5f8",
+  "theme_color": "#25364d",
+  "description": "แอปจัดการเงินส่วนตัวและธุรกิจ เก็บข้อมูลในอุปกรณ์",
   "icons": [
     {
-      "src": "./icon.svg",
+      "src": "icon.svg",
       "sizes": "any",
       "type": "image/svg+xml",
       "purpose": "any maskable"

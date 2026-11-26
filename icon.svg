@@ -1,9 +1,1 @@
-<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 512 512">
-  <rect width="512" height="512" rx="96" fill="#0f766e"/>
-  <rect x="112" y="132" width="288" height="288" rx="34" fill="#f8fafc"/>
-  <path d="M256 132c44 0 80 36 80 80H176c0-44 36-80 80-80z" fill="#f59e0b"/>
-  <path d="M176 244h160v176H176z" fill="#d6d3d1"/>
-  <path d="M176 244h160v44H176zm0 88h160v44H176z" fill="#a8a29e"/>
-  <circle cx="256" cx="256" r="44" fill="#0f766e"/>
-  <text x="256" y="272" text-anchor="middle" font-size="52" font-family="sans-serif" font-weight="700" fill="#fff">อิฐ</text>
-</svg>
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 512 512"><rect width="512" height="512" rx="112" fill="#25364d"/><path d="M150 165h212l-18 245c-2 24-21 42-45 42h-86c-24 0-43-18-45-42z" fill="#e3c995"/><path d="M132 143c0-15 12-27 27-27h194c15 0 27 12 27 27v22H132z" fill="#fff"/><path d="M185 224h142" stroke="#25364d" stroke-width="18" stroke-linecap="round"/><path d="M185 275h142" stroke="#25364d" stroke-width="18" stroke-linecap="round"/><circle cx="256" cy="350" r="34" fill="#25364d"/></svg>
